@@ -8,7 +8,6 @@ const EMPTY_STATE = {
   connectionText: "Connecting...",
   clock: "--:--:--",
   tokenBadgeVisible: false,
-  tokenBadgeText: "Token renewed",
   data: null,
   errorMessage: "None"
 };
@@ -27,8 +26,7 @@ function formatPercent(value) {
 
 function formatSeconds(value) {
   if (value == null) return "--";
-  const seconds = Math.max(0, Math.floor(Number(value)));
-  return `${seconds}s`;
+  return `${Math.max(0, Math.floor(Number(value)))}s`;
 }
 
 function formatEpoch(value) {
@@ -52,17 +50,7 @@ function formatHours(value) {
   return `${Number(value ?? 0).toFixed(0)} h`;
 }
 
-function MetricCard({ label, value, hint }) {
-  return (
-    <article className="panel stat-panel">
-      <p className="label">{label}</p>
-      <p className="value">{value}</p>
-      <p className="hint">{hint}</p>
-    </article>
-  );
-}
-
-function DetailRows({ rows }) {
+function metricRows(rows) {
   return (
     <dl className="details compact-details">
       {rows.map((row) => (
@@ -75,11 +63,232 @@ function DetailRows({ rows }) {
   );
 }
 
-function SectionCard({ title, rows }) {
+function DetailCard({ title, rows }) {
   return (
-    <section className="overview-card">
-      <p className="label">{title}</p>
-      <DetailRows rows={rows} />
+    <article className="detail-card">
+      <div className="detail-card-head">
+        <p className="detail-card-title">{title}</p>
+      </div>
+      {metricRows(rows)}
+    </article>
+  );
+}
+
+function EnergyGlyph({ kind }) {
+  if (kind === "sun") {
+    return (
+      <svg viewBox="0 0 48 48" className="glyph">
+        <circle cx="24" cy="24" r="8" />
+        <g>
+          <line x1="24" y1="4" x2="24" y2="12" />
+          <line x1="24" y1="36" x2="24" y2="44" />
+          <line x1="4" y1="24" x2="12" y2="24" />
+          <line x1="36" y1="24" x2="44" y2="24" />
+          <line x1="10" y1="10" x2="15" y2="15" />
+          <line x1="33" y1="33" x2="38" y2="38" />
+          <line x1="10" y1="38" x2="15" y2="33" />
+          <line x1="33" y1="15" x2="38" y2="10" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (kind === "solar") {
+    return (
+      <svg viewBox="0 0 48 48" className="glyph">
+        <path d="M10 14h28l-3 18H13z" />
+        <path d="M16 14l4-6h8l4 6" />
+        <line x1="18" y1="19" x2="18" y2="30" />
+        <line x1="24" y1="19" x2="24" y2="30" />
+        <line x1="30" y1="19" x2="30" y2="30" />
+        <line x1="14" y1="24" x2="34" y2="24" />
+      </svg>
+    );
+  }
+
+  if (kind === "home") {
+    return (
+      <svg viewBox="0 0 48 48" className="glyph">
+        <path d="M8 22L24 10l16 12" />
+        <path d="M14 20v18h20V20" />
+        <path d="M21 38V28h6v10" />
+      </svg>
+    );
+  }
+
+  if (kind === "grid") {
+    return (
+      <svg viewBox="0 0 48 48" className="glyph">
+        <path d="M24 8l8 10h-5l5 8h-5l4 14H17l4-14h-5l5-8h-5z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 48 48" className="glyph">
+      <rect x="12" y="14" width="24" height="20" rx="4" />
+      <rect x="36" y="20" width="4" height="8" rx="2" />
+      <line x1="17" y1="24" x2="24" y2="24" />
+      <line x1="28" y1="24" x2="31" y2="24" />
+      <line x1="29.5" y1="22.5" x2="29.5" y2="25.5" />
+    </svg>
+  );
+}
+
+function FlowLine({ className, active, reverse = false, tone = "solar", path }) {
+  return (
+    <g className={`flow-group ${className} tone-${tone} ${active ? "is-active" : ""} ${reverse ? "is-reverse" : ""}`}>
+      <path className="flow-track" d={path} pathLength="100" />
+      {active ? (
+        <>
+          <circle className="flow-orb" r="7">
+            <animateMotion dur="3s" repeatCount="indefinite" path={path} rotate="auto" />
+          </circle>
+          <circle className="flow-orb delay-1" r="7">
+            <animateMotion dur="3s" begin="1s" repeatCount="indefinite" path={path} rotate="auto" />
+          </circle>
+          <circle className="flow-orb delay-2" r="7">
+            <animateMotion dur="3s" begin="2s" repeatCount="indefinite" path={path} rotate="auto" />
+          </circle>
+        </>
+      ) : null}
+    </g>
+  );
+}
+
+function EnergyNode({ className, kind, label, value, accent = "neutral", center = false, subtitle = null }) {
+  return (
+    <div className={`energy-node ${className} accent-${accent} ${center ? "energy-node-center" : ""}`}>
+      <div className="energy-icon-wrap">
+        {center ? <span className="home-ring ring-a" /> : null}
+        {center ? <span className="home-ring ring-b" /> : null}
+        <div className="energy-icon"><EnergyGlyph kind={kind} /></div>
+      </div>
+      <div className="energy-copy">
+        <p className="energy-label">{label}</p>
+        <p className="energy-value">{value}</p>
+        {subtitle ? <p className="energy-subtitle">{subtitle}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function EnergyFlowCard({ realtime, battery, grid, inverter }) {
+  const pvPower = Number(realtime.pv_power_watts ?? 0);
+  const gridPower = Number(grid.power_watts ?? 0);
+  const batteryPower = Math.abs(Number(battery.power_watts ?? 0));
+  const batteryMode = battery.mode_label ?? "Standby";
+
+  const importing = gridPower < 0 ? Math.abs(gridPower) : 0;
+  const exporting = gridPower > 0 ? gridPower : 0;
+  const charging = batteryMode === "Charging" ? batteryPower : 0;
+  const discharging = batteryMode === "Discharging" ? batteryPower : 0;
+  const houseConsumption = Math.max(0, pvPower + importing + discharging - exporting - charging);
+  const gridModeText = importing > 0 ? `Import ${formatWatts(importing)}` : exporting > 0 ? `Export ${formatWatts(exporting)}` : "Balanced";
+
+  return (
+    <section className="panel flow-panel">
+      <div className="panel-header panel-header-strong">
+        <div>
+          <p className="eyebrow">Energy Distribution</p>
+          <h2 className="flow-title">Home Assistant Style Overview</h2>
+        </div>
+        <div className="flow-legend">
+          <span className="legend-dot solar" /> Live flow
+        </div>
+      </div>
+
+      <div className="flow-summary">
+        <div className="summary-chip">
+          <span>House Load</span>
+          <strong>{formatWatts(houseConsumption)}</strong>
+        </div>
+        <div className="summary-chip">
+          <span>Battery</span>
+          <strong>{formatPercent(battery.soc_percent)} · {batteryMode}</strong>
+        </div>
+        <div className="summary-chip">
+          <span>Grid</span>
+          <strong>{importing > 0 ? `Import ${formatWatts(importing)}` : exporting > 0 ? `Export ${formatWatts(exporting)}` : "Balanced"}</strong>
+        </div>
+      </div>
+
+      <div className="energy-flow">
+        <svg className="flow-svg" viewBox="0 0 1200 470" preserveAspectRatio="none" aria-hidden="true">
+          <FlowLine
+            className="sun-to-solar"
+            active={pvPower > 0}
+            tone="solar"
+            path="M 244 118 L 244 136 Q 244 154 262 154 L 278 154"
+          />
+          <FlowLine
+            className="solar-to-home"
+            active={pvPower > 0 && houseConsumption > 0}
+            tone="solar"
+            path="M 236 214 L 495 214"
+          />
+          <FlowLine
+            className="solar-to-battery"
+            active={charging > 0}
+            tone="battery"
+            path="M 214 244 L 214 284 Q 214 304 234 304 L 300 304 Q 320 304 320 324 L 320 360"
+          />
+          <FlowLine
+            className="battery-to-home"
+            active={discharging > 0}
+            tone="battery"
+            path="M 348 360 L 520 360 Q 540 360 540 340 L 540 252"
+          />
+          <FlowLine
+            className="grid-import"
+            active={importing > 0}
+            tone="import"
+            reverse
+            path="M 966 214 L 704 214"
+          />
+          <FlowLine
+            className="grid-export"
+            active={exporting > 0}
+            tone="export"
+            path="M 704 214 L 966 214"
+          />
+        </svg>
+
+        <EnergyNode className="node-sun" kind="sun" label="Sun" value={pvPower > 0 ? "Generating" : ""} accent="solar" />
+        <EnergyNode className="node-solar" kind="solar" label="Solar" value={formatWatts(pvPower)} accent="solar" subtitle="Panel production" />
+        <EnergyNode className="node-home" kind="home" label="Home" value={formatWatts(houseConsumption)} accent="home" center subtitle="Instant consumption" />
+        <EnergyNode
+          className="node-grid"
+          kind="grid"
+          label="Grid"
+          value={importing > 0 ? `↓ ${formatWatts(importing)}` : exporting > 0 ? `↑ ${formatWatts(exporting)}` : "0 W"}
+          accent={importing > 0 ? "import" : exporting > 0 ? "export" : "grid"}
+          subtitle={gridModeText}
+        />
+        <EnergyNode
+          className="node-battery"
+          kind="battery"
+          label="Battery"
+          value={`${formatPercent(battery.soc_percent)} · ${batteryMode === "Standby" ? "Idle" : formatWatts(batteryPower)}`}
+          accent="battery"
+          subtitle={batteryMode}
+        />
+      </div>
+
+      <div className="flow-footer">
+        <div className="footer-chip">
+          <span>PV1</span>
+          <strong>{formatVolts(inverter.pv1_voltage_volts)} / {formatAmps(inverter.pv1_current_amps)}</strong>
+        </div>
+        <div className="footer-chip">
+          <span>PV2</span>
+          <strong>{formatVolts(inverter.pv2_voltage_volts)} / {formatAmps(inverter.pv2_current_amps)}</strong>
+        </div>
+        <div className="footer-chip">
+          <span>Inverter Temp</span>
+          <strong>{Number(inverter.temperature_celsius ?? 0).toFixed(1)} °C</strong>
+        </div>
+      </div>
     </section>
   );
 }
@@ -180,120 +389,121 @@ export default function App() {
   const stats = snapshot.stats ?? {};
   const weather = snapshot.weather ?? {};
 
-  const batteryRows = [
-    { label: "Voltage", value: formatVolts(battery.voltage_volts) },
-    { label: "Current", value: formatAmps(battery.current_amps) },
-    { label: "Power", value: formatWatts(battery.power_watts) },
-    { label: "Mode", value: battery.mode_label ?? "--" }
-  ];
-
-  const gridRows = [
-    { label: "Voltage", value: formatVolts(grid.voltage_volts) },
-    { label: "Frequency", value: formatHertz(grid.frequency_hz) },
-    { label: "Power Flow", value: formatWatts(grid.power_watts) },
-    { label: "Runtime", value: formatHours(totals.runtime_hours) }
-  ];
-
-  const pvRows = [
+  const detailSections = [
     {
-      label: "PV1",
-      value: `${formatVolts(inverter.pv1_voltage_volts)} / ${formatAmps(inverter.pv1_current_amps)}`
+      title: "Plant",
+      rows: [
+        { label: "Name", value: plant.name ?? "--" },
+        { label: "Address", value: plant.address ?? "--" },
+        { label: "Online Since", value: plant.turn_on_time ?? "--" },
+        { label: "Last Refresh", value: inverter.last_refresh_time ?? "--" }
+      ]
     },
     {
-      label: "PV2",
-      value: `${formatVolts(inverter.pv2_voltage_volts)} / ${formatAmps(inverter.pv2_current_amps)}`
+      title: "Battery",
+      rows: [
+        { label: "SOC", value: formatPercent(battery.soc_percent) },
+        { label: "Voltage", value: formatVolts(battery.voltage_volts) },
+        { label: "Current", value: formatAmps(battery.current_amps) },
+        { label: "Mode", value: battery.mode_label ?? "--" }
+      ]
     },
-    { label: "Temperature", value: `${Number(inverter.temperature_celsius ?? 0).toFixed(1)} °C` },
-    { label: "Total Yield", value: formatKwh(realtime.total_kwh) }
-  ];
-
-  const weatherRows = [
-    { label: "Today", value: weather.today_text ?? "--" },
-    { label: "Tomorrow", value: weather.tomorrow_text ?? "--" },
-    { label: "Self-use", value: formatPercent(stats.self_use_rate_percent) },
-    { label: "Contribution", value: formatPercent(stats.contributing_rate_percent) }
-  ];
-
-  const plantRows = [
-    { label: "Name", value: plant.name ?? "--" },
-    { label: "Address", value: plant.address ?? "--" },
-    { label: "Online Since", value: plant.turn_on_time ?? "--" },
-    { label: "Temperature", value: `${Number(inverter.temperature_celsius ?? 0).toFixed(1)} °C` }
-  ];
-
-  const productionRows = [
-    { label: "Today", value: formatKwh(realtime.today_kwh) },
-    { label: "This Month", value: formatKwh(realtime.month_kwh) },
-    { label: "Total", value: formatKwh(realtime.total_kwh) },
-    { label: "Self-use Rate", value: formatPercent(stats.self_use_rate_percent) }
-  ];
-
-  const energyRows = [
-    { label: "Grid Bought", value: formatKwh(totals.grid_buy_kwh) },
-    { label: "Grid Sold", value: formatKwh(totals.grid_sell_kwh) },
-    { label: "Battery Charged", value: formatKwh(totals.battery_charge_kwh) },
-    { label: "Battery Discharged", value: formatKwh(totals.battery_discharge_kwh) }
-  ];
-
-  const backendRows = [
-    { label: "API Base", value: status.api_base ?? "--" },
-    { label: "Last Success", value: formatEpoch(status.last_success_at) },
     {
-      label: "Poll Interval",
-      value: `${backend.poll_interval_seconds ?? "--"}s base / ${backend.next_retry_delay_seconds ?? "--"}s next`
+      title: "Grid",
+      rows: [
+        { label: "Power", value: formatWatts(grid.power_watts) },
+        { label: "Voltage", value: formatVolts(grid.voltage_volts) },
+        { label: "Frequency", value: formatHertz(grid.frequency_hz) },
+        { label: "Runtime", value: formatHours(totals.runtime_hours) }
+      ]
     },
-    { label: "Last Error", value: viewState.errorMessage }
+    {
+      title: "Production",
+      rows: [
+        { label: "Now", value: formatWatts(realtime.pv_power_watts) },
+        { label: "Today", value: formatKwh(realtime.today_kwh) },
+        { label: "Month", value: formatKwh(realtime.month_kwh) },
+        { label: "Total", value: formatKwh(realtime.total_kwh) }
+      ]
+    },
+    {
+      title: "Energy Counters",
+      rows: [
+        { label: "Grid Bought", value: formatKwh(totals.grid_buy_kwh) },
+        { label: "Grid Sold", value: formatKwh(totals.grid_sell_kwh) },
+        { label: "Battery Charged", value: formatKwh(totals.battery_charge_kwh) },
+        { label: "Battery Discharged", value: formatKwh(totals.battery_discharge_kwh) }
+      ]
+    },
+    {
+      title: "Weather & Stats",
+      rows: [
+        { label: "Today", value: weather.today_text ?? "--" },
+        { label: "Tomorrow", value: weather.tomorrow_text ?? "--" },
+        { label: "Self-use", value: formatPercent(stats.self_use_rate_percent) },
+        { label: "Contribution", value: formatPercent(stats.contributing_rate_percent) }
+      ]
+    },
+    {
+      title: "Backend",
+      rows: [
+        { label: "Session Age", value: formatSeconds(status.token_age_seconds) },
+        { label: "Refreshes", value: `${status.token_refresh_count ?? "--"}` },
+        { label: "Last Success", value: formatEpoch(status.last_success_at) },
+        { label: "Last Error", value: viewState.errorMessage }
+      ]
+    },
+    {
+      title: "Strings",
+      rows: [
+        { label: "PV1", value: `${formatVolts(inverter.pv1_voltage_volts)} / ${formatAmps(inverter.pv1_current_amps)}` },
+        { label: "PV2", value: `${formatVolts(inverter.pv2_voltage_volts)} / ${formatAmps(inverter.pv2_current_amps)}` },
+        { label: "Temp", value: `${Number(inverter.temperature_celsius ?? 0).toFixed(1)} °C` },
+        { label: "API Base", value: status.api_base ?? "--" }
+      ]
+    }
   ];
 
   return (
     <main className="shell">
-      <section className="hero">
+      <section className="hero hero-ha">
         <div className="hero-copy">
           <p className="eyebrow">Viessmann Solar</p>
-          <h1>Live plant monitor</h1>
+          <h1>Energy dashboard</h1>
+          <p className="hero-subtitle">{plant.name ?? "Solar monitor"} · {plant.address ?? "Realtime snapshot"}</p>
         </div>
         <div className="hero-meta">
-          <span className={`pill pill-accent ${viewState.tokenBadgeVisible ? "" : "is-hidden"}`}>
-            Token renewed
-          </span>
+          <span className={`pill pill-accent ${viewState.tokenBadgeVisible ? "" : "is-hidden"}`}>Token renewed</span>
           <span className={`pill pill-${viewState.connectionKind}`}>{viewState.connectionText}</span>
           <span className="clock">{viewState.clock}</span>
         </div>
       </section>
 
-      <section className="grid">
-        <MetricCard label="PV Power" value={formatWatts(realtime.pv_power_watts)} hint="Instant solar generation" />
-        <MetricCard label="Battery" value={formatPercent(battery.soc_percent)} hint={`Mode: ${battery.mode_label ?? "--"}`} />
-        <MetricCard label="Grid" value={formatWatts(grid.power_watts)} hint="Positive = export, negative = import" />
-        <MetricCard label="Session" value={formatSeconds(status.token_age_seconds)} hint={`Refreshes: ${status.token_refresh_count ?? "--"}`} />
+      <section className="kpi-strip">
+        <div className="kpi-pill">
+          <span>Solar</span>
+          <strong>{formatWatts(realtime.pv_power_watts)}</strong>
+        </div>
+        <div className="kpi-pill">
+          <span>House</span>
+          <strong>{formatWatts(Math.max(0, Number(realtime.pv_power_watts ?? 0) + Math.max(0, -Number(grid.power_watts ?? 0)) + (battery.mode_label === "Discharging" ? Math.abs(Number(battery.power_watts ?? 0)) : 0) - Math.max(0, Number(grid.power_watts ?? 0)) - (battery.mode_label === "Charging" ? Math.abs(Number(battery.power_watts ?? 0)) : 0)))}</strong>
+        </div>
+        <div className="kpi-pill">
+          <span>Battery</span>
+          <strong>{formatPercent(battery.soc_percent)}</strong>
+        </div>
+        <div className="kpi-pill">
+          <span>Grid</span>
+          <strong>{formatWatts(grid.power_watts)}</strong>
+        </div>
       </section>
 
-      <section className="workspace">
-        <article className="panel insights-panel">
-          <div className="panel-header">
-            <h2>Live Details</h2>
-            <span className="microcopy">Real-time electrical overview</span>
-          </div>
-          <div className="insights-grid">
-            <SectionCard title="Battery Detail" rows={batteryRows} />
-            <SectionCard title="Grid Detail" rows={gridRows} />
-            <SectionCard title="PV Strings" rows={pvRows} />
-            <SectionCard title="Weather & Rates" rows={weatherRows} />
-          </div>
-        </article>
+      <EnergyFlowCard realtime={realtime} battery={battery} grid={grid} inverter={inverter} />
 
-        <article className="panel overview-panel">
-          <div className="panel-header">
-            <h2>Overview</h2>
-            <span className="microcopy">Last refresh: {inverter.last_refresh_time ?? "--"}</span>
-          </div>
-          <div className="overview-grid">
-            <SectionCard title="Plant" rows={plantRows} />
-            <SectionCard title="Production" rows={productionRows} />
-            <SectionCard title="Energy Counters" rows={energyRows} />
-            <SectionCard title="Backend" rows={backendRows} />
-          </div>
-        </article>
+      <section className="detail-grid">
+        {detailSections.map((section) => (
+          <DetailCard key={section.title} title={section.title} rows={section.rows} />
+        ))}
       </section>
     </main>
   );
