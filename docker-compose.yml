@@ -1,0 +1,17 @@
+services:
+  viessmann-solar-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8765"
+    env_file:
+      - .env
+    environment:
+      SOLAR_API_HOST: 0.0.0.0
+      SOLAR_API_PORT: 8765
+      SOLAR_POLL_INTERVAL_SECONDS: 1
+      SOLAR_HISTORY_POINTS: 60
+      SOLAR_MAX_BACKOFF_SECONDS: 30
+      SOLAR_SESSION_MAX_AGE_SECONDS: 900
+    restart: unless-stopped

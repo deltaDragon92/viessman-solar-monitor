@@ -1,2 +1,11 @@
 .env
-.venv
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.parcel-cache/
+src-tauri/target/
+solar_data_*.json
+.env.example
+solar_history.jsonl

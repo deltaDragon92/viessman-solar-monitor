@@ -1,244 +1,142 @@
 #!/usr/bin/env python3
 """
-Viessmann Solar Portal - Inverter data reader script
-====================================================
-Reads real-time data from your Viessmann HINV6.0-B1 inverter
-through the SolarPortal APIs (GoodWe SEMS backend).
+Viessmann Solar Portal - CLI snapshot reader
+============================================
+Reads real-time data from the Viessmann Solar Portal and prints
+an easy-to-read summary in the terminal.
 
 Usage:
-    pip install requests
-    python viessmann_solar.py
+    pip install -r requirements.txt
+    python3 viessmann_solar.py
 """
 
-import requests
+from __future__ import annotations
+
 import json
-import hashlib
 from datetime import datetime
 
-# ============================================================
-#  CONFIGURATION — edit only this section
-# ============================================================
-from dotenv import load_dotenv
-import os
+import requests
 
-load_dotenv()
-EMAIL    = os.getenv("EMAIL")
-PASSWORD = os.getenv("PASSWORD")
-PLANT_ID = os.getenv("PLANT_ID")
-# ============================================================
-
-BASE_URL   = "https://www.semsportal.com"
-TOKEN_INIT = {"version": "v2.1.0", "client": "web", "version": "", "language": "en"}
-
-# Base header for login (Token as JSON, plain-text password — works with v1)
-HEADERS_LOGIN = {
-    "Content-Type": "application/json",
-    "Token": json.dumps({"version": "v2.1.0", "client": "web", "language": "en"})
-}
+from solar_portal import SolarPortalClient, normalize_snapshot
 
 
-def login(email: str, password: str) -> dict:
-    """
-    Authenticates with the portal and returns the session token.
-    Uses the v1 endpoint with a plain-text password (verified working method).
-    """
-    print("🔐 Login in corso...")
-    resp = requests.post(
-        f"{BASE_URL}/api/v1/Common/CrossLogin",
-        headers=HEADERS_LOGIN,
-        json={"account": email, "pwd": password},
-        timeout=10
-    )
-    resp.raise_for_status()
-    data = resp.json()
-
-    if data.get("hasError") or data.get("code") != 0:
-        raise Exception(f"Login fallito: {data.get('msg', 'Errore sconosciuto')}")
-
-    token_data = data["data"]
-    api_base   = data.get("api", "https://eu.semsportal.com/api/")
-    print(f"✅ Login OK  —  server: {api_base}")
-    return token_data, api_base
-
-
-def build_auth_headers(token_data: dict) -> dict:
-    """
-    Builds the authentication headers for calls after login.
-    The Token must include the uid, timestamp, and token returned by login.
-    """
-    token_json = json.dumps({
-        "uid":       token_data["uid"],
-        "timestamp": token_data["timestamp"],
-        "token":     token_data["token"],
-        "client":    token_data.get("client", "web"),
-        "version":   token_data.get("version", ""),
-        "language":  token_data.get("language", "en"),
-    })
-    return {
-        "Content-Type": "application/json",
-        "Token": token_json
-    }
-
-
-def get_plant_data(token_data: dict, api_base: str, plant_id: str) -> dict:
-    """
-    Retrieves all real-time plant data:
-    PV production, consumption, battery, grid, weather, and historical KPIs.
-    """
-    print("📡 Recupero dati impianto...")
-    headers = build_auth_headers(token_data)
-    resp = requests.post(
-        f"{api_base}v2/PowerStation/GetMonitorDetailByPowerstationId",
-        headers=headers,
-        json={"powerStationId": plant_id},
-        timeout=10
-    )
-    resp.raise_for_status()
-    data = resp.json()
-
-    if data.get("hasError"):
-        raise Exception(f"Errore API: {data.get('msg', 'Errore sconosciuto')}")
-
-    return data["data"]
-
-
-def stampa_dati(data: dict):
-    """
-    Prints the most useful data in a readable format.
-    """
+def print_snapshot(snapshot: dict) -> None:
+    """Prints the most useful fields from the normalized snapshot."""
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    print(f"\n{'='*55}")
+    plant = snapshot.get("plant", {})
+    realtime = snapshot.get("realtime", {})
+    inverter = snapshot.get("inverter", {})
+    battery = snapshot.get("battery", {})
+    grid = snapshot.get("grid", {})
+    totals = snapshot.get("totals", {})
+    stats = snapshot.get("stats", {})
+    weather = snapshot.get("weather", {})
+
+    print(f"\n{'=' * 55}")
     print(f"  ⚡ VIESSMANN HINV6.0-B1  —  {now}")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
 
-    # --- Plant info ---
-    info = data.get("info", {})
-    print(f"\n🏠 Impianto : {info.get('stationname', 'N/A')}")
-    print(f"📍 Indirizzo: {info.get('address', 'N/A')}")
-    print(f"📅 Attivo dal: {info.get('turnon_time', 'N/A')}")
+    print(f"\n🏠 Plant    : {plant.get('name', 'N/A')}")
+    print(f"📍 Address  : {plant.get('address', 'N/A')}")
+    print(f"📅 Online   : {plant.get('turn_on_time', 'N/A')}")
 
-    # --- Real-time KPIs ---
-    kpi = data.get("kpi", {})
-    print(f"\n{'─'*55}")
-    print(f"  PRODUZIONE IN TEMPO REALE")
-    print(f"{'─'*55}")
-    print(f"  ☀️  Potenza FV istantanea : {kpi.get('pac', 0):.1f} W")
-    print(f"  📦 Produzione oggi        : {kpi.get('power', 0):.2f} kWh")
-    print(f"  📆 Produzione questo mese : {kpi.get('month_generation', 0):.1f} kWh")
-    print(f"  📈 Produzione totale      : {kpi.get('total_power', 0):.1f} kWh")
+    print(f"\n{'─' * 55}")
+    print("  REAL-TIME PRODUCTION")
+    print(f"{'─' * 55}")
+    print(f"  ☀️  PV power now       : {realtime.get('pv_power_watts', 0):.1f} W")
+    print(f"  📦 Generated today     : {realtime.get('today_kwh', 0):.2f} kWh")
+    print(f"  📆 Generated this month: {realtime.get('month_kwh', 0):.1f} kWh")
+    print(f"  📈 Generated total     : {realtime.get('total_kwh', 0):.1f} kWh")
 
-    # --- Detailed inverter data ---
-    inverters = data.get("inverter", [])
-    if inverters:
-        inv = inverters[0]
-        d   = inv.get("d", {})
-        full = inv.get("invert_full", {})
+    print(f"\n{'─' * 55}")
+    print(f"  INVERTER ({inverter.get('type', 'N/A')}  SN: {inverter.get('serial_number', 'N/A')})")
+    print(f"{'─' * 55}")
 
-        print(f"\n{'─'*55}")
-        print(f"  INVERTER  ({inv.get('type', 'N/A')}  SN: {inv.get('sn', 'N/A')})")
-        print(f"{'─'*55}")
+    pmeter = grid.get("power_watts", 0)
+    if pmeter < 0:
+        print(f"  🔌 Grid          : ⬇️  Import  {abs(pmeter):.0f} W")
+    elif pmeter > 0:
+        print(f"  🔌 Grid          : ⬆️  Export  {pmeter:.0f} W")
+    else:
+        print("  🔌 Grid          : ↔️  Balanced  0 W")
 
-        # Grid
-        pmeter = full.get("pmeter", 0)
-        if pmeter < 0:
-            print(f"  🔌 Rete         : ⬇️  Acquisto  {abs(pmeter):.0f} W")
-        elif pmeter > 0:
-            print(f"  🔌 Rete         : ⬆️  Vendita   {pmeter:.0f} W")
-        else:
-            print(f"  🔌 Rete         : ↔️  Bilanciato  0 W")
+    print(
+        "  🔋 Battery SOC   : "
+        f"{battery.get('soc_percent', 0):.0f}%  "
+        f"({battery.get('voltage_volts', 0):.1f}V / "
+        f"{battery.get('current_amps', 0):.1f}A / "
+        f"{battery.get('power_watts', 0):.0f}W)"
+    )
+    print(f"  🔋 Battery mode  : {battery.get('mode_label', 'N/A')}")
+    print(
+        "  ☀️  PV strings    : "
+        f"PV1 {inverter.get('pv1_voltage_volts', 0):.1f}V/{inverter.get('pv1_current_amps', 0):.1f}A, "
+        f"PV2 {inverter.get('pv2_voltage_volts', 0):.1f}V/{inverter.get('pv2_current_amps', 0):.1f}A"
+    )
+    print(f"  ⚡ Grid voltage  : {grid.get('voltage_volts', 0):.1f} V")
+    print(f"  ⚡ Grid frequency: {grid.get('frequency_hz', 0):.2f} Hz")
+    print(f"  🌡️  Temperature   : {inverter.get('temperature_celsius', 0):.1f} °C")
+    print(f"  🕐 Last refresh  : {inverter.get('last_refresh_time', 'N/A')}")
 
-        # Battery
-        soc    = full.get("soc", 0)
-        vbat   = full.get("vbattery1", 0)
-        ibat   = full.get("ibattery1", 0)
-        pbat   = full.get("total_pbattery", 0)
-        bmode  = full.get("battary_work_mode", 0)
-        bmode_str = {0: "Standby", 1: "Carica", 2: "Scarica"}.get(bmode, str(bmode))
-        print(f"  🔋 Batteria SOC : {soc:.0f}%  ({vbat:.1f}V / {ibat:.1f}A / {pbat:.0f}W)")
-        print(f"  🔋 Modalità bat : {bmode_str}")
+    print(f"\n{'─' * 55}")
+    print("  LIFETIME COUNTERS")
+    print(f"{'─' * 55}")
+    print(f"  📥 Bought from grid : {totals.get('grid_buy_kwh', 0):.1f} kWh")
+    print(f"  📤 Sold to grid     : {totals.get('grid_sell_kwh', 0):.2f} kWh")
+    print(f"  🔋 Battery charged  : {totals.get('battery_charge_kwh', 0):.1f} kWh")
+    print(f"  🔋 Battery discharged: {totals.get('battery_discharge_kwh', 0):.1f} kWh")
+    print(f"  ⏱️  Runtime hours    : {totals.get('runtime_hours', 0):.0f} h")
 
-        # PV panels
-        vpv1 = full.get("vpv1", 0)
-        vpv2 = full.get("vpv2", 0)
-        ipv1 = full.get("ipv1", 0)
-        ipv2 = full.get("ipv2", 0)
-        print(f"  ☀️  Stringa PV1  : {vpv1:.1f}V / {ipv1:.1f}A")
-        print(f"  ☀️  Stringa PV2  : {vpv2:.1f}V / {ipv2:.1f}A")
-
-        # AC grid
-        print(f"  ⚡ Tensione rete : {full.get('vac1', 0):.1f} V")
-        print(f"  ⚡ Frequenza     : {full.get('fac1', 0):.2f} Hz")
-        print(f"  🌡️  Temperatura   : {inv.get('tempperature', 0):.1f} °C")
-
-        # Energy counters
-        print(f"\n{'─'*55}")
-        print(f"  CONTATORI ENERGIA TOTALI")
-        print(f"{'─'*55}")
-        print(f"  📥 Acquistata dalla rete : {full.get('total_buy', 0):.1f} kWh")
-        print(f"  📤 Venduta alla rete     : {full.get('total_sell', 0):.2f} kWh")
-        print(f"  🔋 Carica batteria tot.  : {full.get('eBatteryCharge', 0):.1f} kWh")
-        print(f"  🔋 Scarica batteria tot. : {full.get('eBatteryDischarge', 0):.1f} kWh")
-        print(f"  ⏱️  Ore di funzionamento  : {full.get('hour_total', 0):.0f} h")
-
-        # Last update
-        print(f"\n  🕐 Ultimo refresh: {inv.get('last_refresh_time', 'N/A')}")
-
-    # --- Overall energy statistics ---
-    stats = data.get("energeStatisticsTotals", {})
     if stats:
-        print(f"\n{'─'*55}")
-        print(f"  STATISTICHE COMPLESSIVE")
-        print(f"{'─'*55}")
-        print(f"  ♻️  Autoconsumo FV      : {stats.get('selfUseRate', 0)*100:.0f}%")
-        print(f"  📊 Tasso contribuzione : {stats.get('contributingRate', 0)*100:.0f}%")
+        print(f"\n{'─' * 55}")
+        print("  OVERALL STATISTICS")
+        print(f"{'─' * 55}")
+        print(f"  ♻️  Self-use rate      : {stats.get('self_use_rate_percent', 0):.0f}%")
+        print(f"  📊 Contribution rate   : {stats.get('contributing_rate_percent', 0):.0f}%")
 
-    # --- Weather ---
-    try:
-        forecast = data["weather"]["HeWeather6"][0]["daily_forecast"]
-        oggi     = forecast[0]
-        domani   = forecast[1]
-        print(f"\n{'─'*55}")
-        print(f"  METEO — Perugia")
-        print(f"{'─'*55}")
-        print(f"  Oggi   : {oggi['cond_txt_d']}  {oggi['tmp_min']}°→{oggi['tmp_max']}°C  💧{oggi['hum']}%")
-        print(f"  Domani : {domani['cond_txt_d']}  {domani['tmp_min']}°→{domani['tmp_max']}°C  💧{domani['hum']}%")
-    except (KeyError, IndexError):
-        pass
+    if weather:
+        print(f"\n{'─' * 55}")
+        print(f"  WEATHER — {weather.get('location_label', 'N/A')}")
+        print(f"{'─' * 55}")
+        print(
+            "  Today  : "
+            f"{weather.get('today_text', 'N/A')}  "
+            f"{weather.get('today_min_celsius', 'N/A')}°→{weather.get('today_max_celsius', 'N/A')}°C  "
+            f"💧{weather.get('today_humidity_percent', 'N/A')}%"
+        )
+        print(
+            "  Tomorrow: "
+            f"{weather.get('tomorrow_text', 'N/A')}  "
+            f"{weather.get('tomorrow_min_celsius', 'N/A')}°→{weather.get('tomorrow_max_celsius', 'N/A')}°C  "
+            f"💧{weather.get('tomorrow_humidity_percent', 'N/A')}%"
+        )
 
-    print(f"\n{'='*55}\n")
+    print(f"\n{'=' * 55}\n")
 
 
-def salva_json(data: dict, filename: str = None):
-    """
-    Saves the full response to a JSON file for later analysis.
-    """
+def save_json(data: dict, filename: str | None = None) -> str:
+    """Saves the normalized snapshot to a JSON file."""
     if filename is None:
         filename = f"solar_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"💾 Dati completi salvati in: {filename}")
+    with open(filename, "w", encoding="utf-8") as file_handle:
+        json.dump(data, file_handle, indent=2, ensure_ascii=False)
+    return filename
 
 
-# ============================================================
-#  MAIN
-# ============================================================
 if __name__ == "__main__":
     try:
-        # 1. Login
-        token_data, api_base = login(EMAIL, PASSWORD)
+        client = SolarPortalClient.from_env()
+        raw_data = client.fetch_plant_data()
+        snapshot = normalize_snapshot(raw_data, client.get_status())
+        print_snapshot(snapshot)
 
-        # 2. Fetch data
-        plant_data = get_plant_data(token_data, api_base, PLANT_ID)
-
-        # 3. Print a readable summary
-        stampa_dati(plant_data)
-
-        # 4. (Optional) save the full JSON — uncomment if needed
-        # salva_json(plant_data)
+        # Optional: save the normalized snapshot to disk.
+        # saved_to = save_json(snapshot)
+        # print(f"💾 Snapshot saved to: {saved_to}")
 
     except requests.exceptions.ConnectionError:
-        print("❌ Errore di connessione — controlla la rete")
+        print("❌ Connection error — check your network")
     except requests.exceptions.Timeout:
-        print("❌ Timeout — il server non risponde")
-    except Exception as e:
-        print(f"❌ Errore: {e}")
+        print("❌ Timeout — the server did not respond")
+    except Exception as exc:
+        print(f"❌ Error: {exc}")
