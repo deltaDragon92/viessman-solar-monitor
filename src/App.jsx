@@ -158,27 +158,59 @@ function EnergyGlyph({ kind }) {
 }
 
 function FlowLine({ className, active, reverse = false, tone = "solar", path }) {
+  const photonStyle = {
+    solar: {
+      tail: "!fill-[#ffd166]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(255,209,102,0.72))_drop-shadow(0_0_34px_rgba(255,158,94,0.42))] animate-photon-tail",
+      aura: "!fill-[#fff6db]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(255,232,170,0.92))_drop-shadow(0_0_42px_rgba(255,158,94,0.62))] animate-photon-aura",
+      core: "!fill-[#fff9ea] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(255,247,222,0.98))_drop-shadow(0_0_20px_rgba(255,209,102,0.96))_drop-shadow(0_0_38px_rgba(255,158,94,0.82))] animate-photon-core"
+    },
+    battery: {
+      tail: "!fill-[#65d98b]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(101,217,139,0.72))_drop-shadow(0_0_34px_rgba(54,184,106,0.42))] animate-photon-tail",
+      aura: "!fill-[#effff4]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(220,255,231,0.92))_drop-shadow(0_0_42px_rgba(54,184,106,0.62))] animate-photon-aura",
+      core: "!fill-[#f7fff9] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(243,255,247,0.98))_drop-shadow(0_0_20px_rgba(101,217,139,0.96))_drop-shadow(0_0_38px_rgba(54,184,106,0.82))] animate-photon-core"
+    },
+    import: {
+      tail: "!fill-[#ff8f70]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(255,143,112,0.72))_drop-shadow(0_0_34px_rgba(255,110,74,0.42))] animate-photon-tail",
+      aura: "!fill-[#fff0eb]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(255,229,222,0.92))_drop-shadow(0_0_42px_rgba(255,110,74,0.62))] animate-photon-aura",
+      core: "!fill-[#fff8f5] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(255,245,241,0.98))_drop-shadow(0_0_20px_rgba(255,143,112,0.96))_drop-shadow(0_0_38px_rgba(255,110,74,0.82))] animate-photon-core"
+    },
+    export: {
+      tail: "!fill-[#7a9cff]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(122,156,255,0.72))_drop-shadow(0_0_34px_rgba(82,199,255,0.42))] animate-photon-tail",
+      aura: "!fill-[#f3f7ff]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(237,243,255,0.92))_drop-shadow(0_0_42px_rgba(82,199,255,0.62))] animate-photon-aura",
+      core: "!fill-[#fbfdff] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(248,251,255,0.98))_drop-shadow(0_0_20px_rgba(122,156,255,0.96))_drop-shadow(0_0_38px_rgba(82,199,255,0.82))] animate-photon-core"
+    }
+  }[tone];
+
   return (
     <g className={`flow-group ${className} tone-${tone} ${active ? "is-active" : ""} ${reverse ? "is-reverse" : ""}`}>
       <path className="flow-track" d={path} pathLength="100" />
       {active ? (
         <>
-          <circle className="flow-orb flow-orb-core" r="4.5">
+          <ellipse className={`flow-orb flow-orb-tail ${photonStyle.tail}`} rx="13" ry="2.6">
+            <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
+          </ellipse>
+          <circle className={`flow-orb flow-orb-aura ${photonStyle.aura}`} r="10.5">
             <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb flow-orb-aura" r="9">
+          <circle className={`flow-orb flow-orb-core ${photonStyle.core}`} r="4.2">
             <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb flow-orb-core delay-1" r="4.5">
+          <ellipse className={`flow-orb flow-orb-tail delay-1 ${photonStyle.tail}`} rx="13" ry="2.6">
+            <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
+          </ellipse>
+          <circle className={`flow-orb flow-orb-aura delay-1 ${photonStyle.aura}`} r="10.5">
             <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb flow-orb-aura delay-1" r="9">
+          <circle className={`flow-orb flow-orb-core delay-1 ${photonStyle.core}`} r="4.2">
             <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb flow-orb-core delay-2" r="4.5">
+          <ellipse className={`flow-orb flow-orb-tail delay-2 ${photonStyle.tail}`} rx="13" ry="2.6">
+            <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
+          </ellipse>
+          <circle className={`flow-orb flow-orb-aura delay-2 ${photonStyle.aura}`} r="10.5">
             <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb flow-orb-aura delay-2" r="9">
+          <circle className={`flow-orb flow-orb-core delay-2 ${photonStyle.core}`} r="4.2">
             <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
         </>
@@ -219,6 +251,20 @@ function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
   const discharging = batteryMode === "Discharging" ? batteryPower : 0;
   const houseConsumption = Math.max(0, pvPower + importing + discharging - exporting - charging);
   const gridModeText = importing > 0 ? `Import ${formatWatts(importing)}` : exporting > 0 ? `Export ${formatWatts(exporting)}` : "Balanced";
+  const trackGap = 18;
+
+  const solarRightX = 296;
+  const solarBottomX = 184;
+  const solarBottomY = 248;
+  const homeLeftX = 475;
+  const homeRightX = 725;
+  const homeBottomX = 600;
+  const homeBottomY = 248;
+  const gridLeftX = 926;
+  const batteryTopX = 297;
+  const batteryTopY = 328;
+  const batteryRightX = 408;
+  const batteryRightY = 376;
 
   return (
     <section className="panel flow-panel">
@@ -253,32 +299,32 @@ function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
             className="solar-to-home"
             active={pvPower > 0 && houseConsumption > 0}
             tone="solar"
-            path="M 296 200 L 475 200"
+            path={`M ${solarRightX + trackGap} 200 L ${homeLeftX - trackGap} 200`}
           />
           <FlowLine
             className="solar-to-battery"
             active={charging > 0}
             tone="battery"
-            path="M 184 248 L 184 292 Q 184 312 204 312 L 296 312 Q 316 312 316 332 L 316 376"
+            path={`M ${solarBottomX} ${solarBottomY + trackGap} L ${solarBottomX} 288 Q ${solarBottomX} 308 204 308 L 279 308 Q 297 308 297 320`}
           />
           <FlowLine
             className="battery-to-home"
             active={discharging > 0}
             tone="battery"
-            path="M 408 248 L 500 248 Q 520 248 520 228 L 520 220 Q 520 200 500 200 L 475 200"
+            path={`M ${batteryRightX + trackGap} ${batteryRightY} L 580 ${batteryRightY} Q ${homeBottomX} ${batteryRightY} ${homeBottomX} 356 L ${homeBottomX} ${homeBottomY + trackGap}`}
           />
           <FlowLine
             className="grid-import"
             active={importing > 0}
             tone="import"
             reverse
-            path="M 926 200 L 725 200"
+            path={`M ${gridLeftX - trackGap} 200 L ${homeRightX + trackGap} 200`}
           />
           <FlowLine
             className="grid-export"
             active={exporting > 0}
             tone="export"
-            path="M 725 200 L 926 200"
+            path={`M ${homeRightX + trackGap} 200 L ${gridLeftX - trackGap} 200`}
           />
         </svg>
 

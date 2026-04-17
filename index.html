@@ -4,6 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Viessmann Solar Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            animation: {
+              "photon-core": "photon-core 3.4s ease-in-out infinite",
+              "photon-aura": "photon-aura 4.2s ease-in-out infinite",
+              "photon-tail": "photon-tail 4.8s ease-in-out infinite"
+            },
+            keyframes: {
+              "photon-core": {
+                "0%, 100%": { opacity: "0.88", transform: "scale(0.92)" },
+                "50%": { opacity: "1", transform: "scale(1.06)" }
+              },
+              "photon-aura": {
+                "0%, 100%": { opacity: "0.16", transform: "scale(0.9)" },
+                "50%": { opacity: "0.3", transform: "scale(1.12)" }
+              },
+              "photon-tail": {
+                "0%, 100%": { opacity: "0.08", transform: "scaleX(0.86) scaleY(0.92)" },
+                "50%": { opacity: "0.16", transform: "scaleX(1.08) scaleY(1.02)" }
+              }
+            }
+          }
+        }
+      };
+    </script>
     <script type="module" src="./src/main.jsx"></script>
   </head>
   <body>

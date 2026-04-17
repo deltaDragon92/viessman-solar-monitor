@@ -343,8 +343,8 @@ dt {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 209, 102, 0.2) 0%, rgba(255, 179, 71, 0.12) 34%, transparent 72%);
-  filter: blur(10px);
+  background: transparent;
+  filter: none;
 }
 
 .sun-radiance-a {
@@ -383,7 +383,7 @@ dt {
 }
 
 .sun-source.is-night .sun-radiance {
-  background: radial-gradient(circle, rgba(168, 190, 255, 0.18) 0%, rgba(122, 156, 255, 0.1) 36%, transparent 72%);
+  background: transparent;
 }
 
 .sun-source.is-night .sun-core {
@@ -531,6 +531,7 @@ dt {
   opacity: 0;
   transform-box: fill-box;
   transform-origin: center;
+  mix-blend-mode: screen;
 }
 
 .flow-group.is-active .flow-orb {
@@ -538,63 +539,15 @@ dt {
 }
 
 .flow-orb-core {
-  opacity: 0.98;
+  opacity: 0.92;
 }
 
 .flow-orb-aura {
-  opacity: 0.34;
+  opacity: 0.2;
 }
 
-.tone-solar .flow-orb {
-  fill: #ffd166;
-}
-
-.tone-solar .flow-orb-core {
-  filter: drop-shadow(0 0 4px #ffe39e) drop-shadow(0 0 10px #ffd166) drop-shadow(0 0 24px #ff9e5e);
-}
-
-.tone-solar .flow-orb-aura {
-  fill: rgba(255, 209, 102, 0.34);
-  filter: blur(1.2px) drop-shadow(0 0 12px #ffd166) drop-shadow(0 0 28px #ff9e5e);
-}
-
-.tone-battery .flow-orb {
-  fill: #65d98b;
-}
-
-.tone-battery .flow-orb-core {
-  filter: drop-shadow(0 0 4px #baf7cd) drop-shadow(0 0 10px #65d98b) drop-shadow(0 0 24px #36b86a);
-}
-
-.tone-battery .flow-orb-aura {
-  fill: rgba(101, 217, 139, 0.32);
-  filter: blur(1.2px) drop-shadow(0 0 12px #65d98b) drop-shadow(0 0 28px #36b86a);
-}
-
-.tone-import .flow-orb {
-  fill: #ff8f70;
-}
-
-.tone-import .flow-orb-core {
-  filter: drop-shadow(0 0 4px #ffd2c7) drop-shadow(0 0 10px #ff8f70) drop-shadow(0 0 24px #ff6e4a);
-}
-
-.tone-import .flow-orb-aura {
-  fill: rgba(255, 143, 112, 0.34);
-  filter: blur(1.2px) drop-shadow(0 0 12px #ff8f70) drop-shadow(0 0 28px #ff6e4a);
-}
-
-.tone-export .flow-orb {
-  fill: #7a9cff;
-}
-
-.tone-export .flow-orb-core {
-  filter: drop-shadow(0 0 4px #d0dcff) drop-shadow(0 0 10px #7a9cff) drop-shadow(0 0 24px #52c7ff);
-}
-
-.tone-export .flow-orb-aura {
-  fill: rgba(122, 156, 255, 0.34);
-  filter: blur(1.2px) drop-shadow(0 0 12px #7a9cff) drop-shadow(0 0 28px #52c7ff);
+.flow-orb-tail {
+  opacity: 0.14;
 }
 
 .detail-grid {
@@ -652,6 +605,47 @@ dd {
   100% {
     transform: scale(1.35);
     opacity: 0;
+  }
+}
+
+@keyframes particle-flicker {
+  0%, 100% {
+    opacity: 0.72;
+    transform: scale(0.92);
+  }
+
+  35% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+
+  60% {
+    opacity: 0.82;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes particle-breathe {
+  0%, 100% {
+    opacity: 0.14;
+    transform: scale(0.86);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes particle-tail {
+  0%, 100% {
+    opacity: 0.08;
+    transform: scaleX(0.82);
+  }
+
+  50% {
+    opacity: 0.18;
+    transform: scaleX(1.08);
   }
 }
 
