@@ -50,6 +50,12 @@ function formatHours(value) {
   return `${Number(value ?? 0).toFixed(0)} h`;
 }
 
+function looksCloudy(conditionText) {
+  const text = String(conditionText ?? "").toLowerCase();
+  const markers = ["cloud", "overcast", "nuvol", "coperto", "mist", "fog", "haze"];
+  return markers.some((marker) => text.includes(marker));
+}
+
 function metricRows(rows) {
   return (
     <dl className="details compact-details">
@@ -89,6 +95,22 @@ function EnergyGlyph({ kind }) {
           <line x1="10" y1="38" x2="15" y2="33" />
           <line x1="33" y1="15" x2="38" y2="10" />
         </g>
+      </svg>
+    );
+  }
+
+  if (kind === "moon") {
+    return (
+      <svg viewBox="0 0 48 48" className="glyph">
+        <path d="M31 8c-8 2-13 9-11 17s10 13 18 11c-3 2-7 4-12 4-10 0-18-8-18-18 0-8 5-15 12-18 3-1 7-1 11 0z" />
+      </svg>
+    );
+  }
+
+  if (kind === "clouds") {
+    return (
+      <svg viewBox="0 0 48 48" className="glyph glyph-clouds">
+        <path d="M14 33h18a7 7 0 0 0 0-14 10 10 0 0 0-19-2A7 7 0 0 0 14 33z" />
       </svg>
     );
   }
@@ -141,14 +163,23 @@ function FlowLine({ className, active, reverse = false, tone = "solar", path }) 
       <path className="flow-track" d={path} pathLength="100" />
       {active ? (
         <>
-          <circle className="flow-orb" r="7">
-            <animateMotion dur="3s" repeatCount="indefinite" path={path} rotate="auto" />
+          <circle className="flow-orb flow-orb-core" r="4.5">
+            <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb delay-1" r="7">
-            <animateMotion dur="3s" begin="1s" repeatCount="indefinite" path={path} rotate="auto" />
+          <circle className="flow-orb flow-orb-aura" r="9">
+            <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
-          <circle className="flow-orb delay-2" r="7">
-            <animateMotion dur="3s" begin="2s" repeatCount="indefinite" path={path} rotate="auto" />
+          <circle className="flow-orb flow-orb-core delay-1" r="4.5">
+            <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
+          </circle>
+          <circle className="flow-orb flow-orb-aura delay-1" r="9">
+            <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
+          </circle>
+          <circle className="flow-orb flow-orb-core delay-2" r="4.5">
+            <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
+          </circle>
+          <circle className="flow-orb flow-orb-aura delay-2" r="9">
+            <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
           </circle>
         </>
       ) : null}
@@ -173,11 +204,14 @@ function EnergyNode({ className, kind, label, value, accent = "neutral", center 
   );
 }
 
-function EnergyFlowCard({ realtime, battery, grid, inverter }) {
+function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
   const pvPower = Number(realtime.pv_power_watts ?? 0);
   const gridPower = Number(grid.power_watts ?? 0);
   const batteryPower = Math.abs(Number(battery.power_watts ?? 0));
   const batteryMode = battery.mode_label ?? "Standby";
+  const currentHour = new Date().getHours();
+  const isNight = currentHour < 6 || currentHour >= 20;
+  const cloudy = looksCloudy(weather?.today_text);
 
   const importing = gridPower < 0 ? Math.abs(gridPower) : 0;
   const exporting = gridPower > 0 ? gridPower : 0;
@@ -191,7 +225,7 @@ function EnergyFlowCard({ realtime, battery, grid, inverter }) {
       <div className="panel-header panel-header-strong">
         <div>
           <p className="eyebrow">Energy Distribution</p>
-          <h2 className="flow-title">Home Assistant Style Overview</h2>
+          <h2 className="flow-title">Live Energy Overview</h2>
         </div>
         <div className="flow-legend">
           <span className="legend-dot solar" /> Live flow
@@ -216,45 +250,54 @@ function EnergyFlowCard({ realtime, battery, grid, inverter }) {
       <div className="energy-flow">
         <svg className="flow-svg" viewBox="0 0 1200 470" preserveAspectRatio="none" aria-hidden="true">
           <FlowLine
-            className="sun-to-solar"
-            active={pvPower > 0}
-            tone="solar"
-            path="M 244 118 L 244 136 Q 244 154 262 154 L 278 154"
-          />
-          <FlowLine
             className="solar-to-home"
             active={pvPower > 0 && houseConsumption > 0}
             tone="solar"
-            path="M 236 214 L 495 214"
+            path="M 296 200 L 475 200"
           />
           <FlowLine
             className="solar-to-battery"
             active={charging > 0}
             tone="battery"
-            path="M 214 244 L 214 284 Q 214 304 234 304 L 300 304 Q 320 304 320 324 L 320 360"
+            path="M 184 248 L 184 292 Q 184 312 204 312 L 296 312 Q 316 312 316 332 L 316 376"
           />
           <FlowLine
             className="battery-to-home"
             active={discharging > 0}
             tone="battery"
-            path="M 348 360 L 520 360 Q 540 360 540 340 L 540 252"
+            path="M 408 248 L 500 248 Q 520 248 520 228 L 520 220 Q 520 200 500 200 L 475 200"
           />
           <FlowLine
             className="grid-import"
             active={importing > 0}
             tone="import"
             reverse
-            path="M 966 214 L 704 214"
+            path="M 926 200 L 725 200"
           />
           <FlowLine
             className="grid-export"
             active={exporting > 0}
             tone="export"
-            path="M 704 214 L 966 214"
+            path="M 725 200 L 926 200"
           />
         </svg>
 
-        <EnergyNode className="node-sun" kind="sun" label="Sun" value={pvPower > 0 ? "Generating" : ""} accent="solar" />
+        <div className={`sun-source ${isNight ? "is-night" : "is-day"}`}>
+          <div className="sun-radiance sun-radiance-a" />
+          <div className="sun-radiance sun-radiance-b" />
+          <div className="sun-core-wrap">
+            <div className="sun-core">
+              <EnergyGlyph kind={isNight ? "moon" : "sun"} />
+              {cloudy ? (
+                <div className="sky-clouds">
+                  <EnergyGlyph kind="clouds" />
+                </div>
+              ) : null}
+            </div>
+            <p className="sun-label">{isNight ? "Moon" : "Sun"}</p>
+            {pvPower > 0 ? <p className="sun-value">Generating</p> : null}
+          </div>
+        </div>
         <EnergyNode className="node-solar" kind="solar" label="Solar" value={formatWatts(pvPower)} accent="solar" subtitle="Panel production" />
         <EnergyNode className="node-home" kind="home" label="Home" value={formatWatts(houseConsumption)} accent="home" center subtitle="Instant consumption" />
         <EnergyNode
@@ -498,7 +541,7 @@ export default function App() {
         </div>
       </section>
 
-      <EnergyFlowCard realtime={realtime} battery={battery} grid={grid} inverter={inverter} />
+      <EnergyFlowCard realtime={realtime} battery={battery} grid={grid} inverter={inverter} weather={weather} />
 
       <section className="detail-grid">
         {detailSections.map((section) => (

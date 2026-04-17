@@ -265,6 +265,7 @@ dt {
 .energy-node {
   position: absolute;
   min-width: 164px;
+  min-height: 96px;
   padding: 14px 16px;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(17, 27, 40, 0.96), rgba(12, 20, 31, 0.92));
@@ -327,28 +328,108 @@ dt {
   color: var(--accent-warm);
 }
 
-.node-sun {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 0 1px rgba(255, 196, 100, 0.08),
-    0 0 32px rgba(255, 179, 71, 0.16),
-    0 0 84px rgba(255, 179, 71, 0.12);
-}
-
-.node-sun::before {
-  content: "";
+.sun-source {
   position: absolute;
-  inset: -18px;
-  border-radius: 30px;
-  background:
-    radial-gradient(circle, rgba(255, 209, 102, 0.22) 0%, rgba(255, 179, 71, 0.12) 38%, transparent 74%);
-  z-index: 0;
+  top: 24px;
+  left: 122px;
+  width: 180px;
+  height: 132px;
+  display: grid;
+  place-items: center;
   pointer-events: none;
 }
 
-.node-sun > * {
+.sun-radiance {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 209, 102, 0.2) 0%, rgba(255, 179, 71, 0.12) 34%, transparent 72%);
+  filter: blur(10px);
+}
+
+.sun-radiance-a {
+  animation: sun-pulse 3.6s ease-in-out infinite;
+}
+
+.sun-radiance-b {
+  animation: sun-pulse 3.6s ease-in-out infinite 1.8s;
+}
+
+.sun-core-wrap {
   position: relative;
   z-index: 1;
+  display: grid;
+  justify-items: center;
+}
+
+.sun-core {
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-warm);
+  background: radial-gradient(circle, rgba(255, 232, 170, 0.2) 0%, rgba(255, 179, 71, 0.14) 58%, rgba(255, 179, 71, 0.06) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 209, 102, 0.16),
+    0 0 24px rgba(255, 179, 71, 0.24),
+    0 0 66px rgba(255, 179, 71, 0.18);
+  overflow: visible;
+}
+
+.sun-core .glyph {
+  width: 34px;
+  height: 34px;
+}
+
+.sun-source.is-night .sun-radiance {
+  background: radial-gradient(circle, rgba(168, 190, 255, 0.18) 0%, rgba(122, 156, 255, 0.1) 36%, transparent 72%);
+}
+
+.sun-source.is-night .sun-core {
+  color: #d6e1ff;
+  background: radial-gradient(circle, rgba(220, 230, 255, 0.16) 0%, rgba(122, 156, 255, 0.12) 58%, rgba(122, 156, 255, 0.05) 100%);
+  box-shadow:
+    0 0 0 1px rgba(190, 208, 255, 0.14),
+    0 0 24px rgba(122, 156, 255, 0.22),
+    0 0 66px rgba(122, 156, 255, 0.16);
+}
+
+.sky-clouds {
+  position: absolute;
+  right: -6px;
+  bottom: -2px;
+  width: 30px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: rgba(230, 238, 248, 0.92);
+  filter: drop-shadow(0 0 6px rgba(210, 222, 236, 0.35));
+}
+
+.sky-clouds .glyph {
+  width: 28px;
+  height: 28px;
+}
+
+.glyph-clouds {
+  fill: rgba(232, 239, 248, 0.92);
+  stroke: rgba(232, 239, 248, 0.92);
+  stroke-width: 1.4;
+}
+
+.sun-label {
+  margin: 10px 0 0;
+  color: #f4d79d;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.sun-value {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 0.82rem;
 }
 
 .accent-home .energy-icon {
@@ -376,32 +457,30 @@ dt {
   color: var(--accent-battery);
 }
 
-.node-sun {
-  top: 34px;
-  left: 138px;
-}
-
 .node-solar {
   top: 152px;
   left: 72px;
+  width: 224px;
 }
 
 .node-home {
-  top: 136px;
+  top: 152px;
   left: 50%;
   transform: translateX(-50%);
-  min-width: 210px;
+  width: 250px;
   padding: 18px 20px;
 }
 
 .node-grid {
   top: 152px;
   right: 54px;
+  width: 220px;
 }
 
 .node-battery {
-  bottom: 52px;
+  bottom: 46px;
   left: 186px;
+  width: 222px;
 }
 
 .energy-node-center {
@@ -455,27 +534,67 @@ dt {
 }
 
 .flow-group.is-active .flow-orb {
-  opacity: 0.95;
+  opacity: 1;
+}
+
+.flow-orb-core {
+  opacity: 0.98;
+}
+
+.flow-orb-aura {
+  opacity: 0.34;
 }
 
 .tone-solar .flow-orb {
   fill: #ffd166;
-  filter: drop-shadow(0 0 6px #ffd166) drop-shadow(0 0 14px #ffd166) drop-shadow(0 0 26px #ff9e5e);
+}
+
+.tone-solar .flow-orb-core {
+  filter: drop-shadow(0 0 4px #ffe39e) drop-shadow(0 0 10px #ffd166) drop-shadow(0 0 24px #ff9e5e);
+}
+
+.tone-solar .flow-orb-aura {
+  fill: rgba(255, 209, 102, 0.34);
+  filter: blur(1.2px) drop-shadow(0 0 12px #ffd166) drop-shadow(0 0 28px #ff9e5e);
 }
 
 .tone-battery .flow-orb {
   fill: #65d98b;
-  filter: drop-shadow(0 0 6px #65d98b) drop-shadow(0 0 14px #65d98b) drop-shadow(0 0 26px #36b86a);
+}
+
+.tone-battery .flow-orb-core {
+  filter: drop-shadow(0 0 4px #baf7cd) drop-shadow(0 0 10px #65d98b) drop-shadow(0 0 24px #36b86a);
+}
+
+.tone-battery .flow-orb-aura {
+  fill: rgba(101, 217, 139, 0.32);
+  filter: blur(1.2px) drop-shadow(0 0 12px #65d98b) drop-shadow(0 0 28px #36b86a);
 }
 
 .tone-import .flow-orb {
   fill: #ff8f70;
-  filter: drop-shadow(0 0 6px #ff8f70) drop-shadow(0 0 14px #ff8f70) drop-shadow(0 0 26px #ff6e4a);
+}
+
+.tone-import .flow-orb-core {
+  filter: drop-shadow(0 0 4px #ffd2c7) drop-shadow(0 0 10px #ff8f70) drop-shadow(0 0 24px #ff6e4a);
+}
+
+.tone-import .flow-orb-aura {
+  fill: rgba(255, 143, 112, 0.34);
+  filter: blur(1.2px) drop-shadow(0 0 12px #ff8f70) drop-shadow(0 0 28px #ff6e4a);
 }
 
 .tone-export .flow-orb {
   fill: #7a9cff;
-  filter: drop-shadow(0 0 6px #7a9cff) drop-shadow(0 0 14px #7a9cff) drop-shadow(0 0 26px #52c7ff);
+}
+
+.tone-export .flow-orb-core {
+  filter: drop-shadow(0 0 4px #d0dcff) drop-shadow(0 0 10px #7a9cff) drop-shadow(0 0 24px #52c7ff);
+}
+
+.tone-export .flow-orb-aura {
+  fill: rgba(122, 156, 255, 0.34);
+  filter: blur(1.2px) drop-shadow(0 0 12px #7a9cff) drop-shadow(0 0 28px #52c7ff);
 }
 
 .detail-grid {
@@ -533,6 +652,23 @@ dd {
   100% {
     transform: scale(1.35);
     opacity: 0;
+  }
+}
+
+@keyframes sun-pulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.28;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.54;
+  }
+
+  100% {
+    transform: scale(0.92);
+    opacity: 0.28;
   }
 }
 
