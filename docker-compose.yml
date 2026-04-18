@@ -1,4 +1,15 @@
 services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: viessmann-solar-mqtt
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
   viessmann-solar-monitor:
     build:
       context: .
@@ -14,4 +25,12 @@ services:
       SOLAR_HISTORY_POINTS: 60
       SOLAR_MAX_BACKOFF_SECONDS: 30
       SOLAR_SESSION_MAX_AGE_SECONDS: 900
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+    depends_on:
+      - mqtt
     restart: unless-stopped
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:

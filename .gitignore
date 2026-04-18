@@ -7,5 +7,4 @@ dist/
 .parcel-cache/
 src-tauri/target/
 solar_data_*.json
-.env.example
 solar_history.jsonl

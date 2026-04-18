@@ -3,15 +3,17 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const root = process.cwd();
-const venvPython = path.join(root, ".venv", "bin", "python");
+const uiRoot = process.cwd();
+const projectRoot = path.resolve(uiRoot, "..");
+const backendRoot = path.join(projectRoot, "backend");
+const venvPython = path.join(projectRoot, ".venv", "bin", "python");
 const pythonCommand = fs.existsSync(venvPython) ? venvPython : "python3";
 
 const backend = spawn(
   pythonCommand,
-  ["solar_api_server.py"],
+  [path.join(backendRoot, "solar_api_server.py")],
   {
-    cwd: root,
+    cwd: projectRoot,
     stdio: "inherit"
   }
 );
@@ -20,7 +22,7 @@ const frontend = spawn(
   "npx",
   ["parcel", "serve", "index.html", "--host", "0.0.0.0", "--port", "1420"],
   {
-    cwd: root,
+    cwd: uiRoot,
     stdio: "inherit"
   }
 );

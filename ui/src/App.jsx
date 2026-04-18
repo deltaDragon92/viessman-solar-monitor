@@ -66,6 +66,21 @@ function formatHours(value) {
   return `${Number(value ?? 0).toFixed(0)} h`;
 }
 
+function particleBurstFromWatts(value, maxBurst = 72) {
+  const watts = Number(value ?? 0);
+  if (watts <= 0) return 0;
+
+  let level = 1;
+  if (watts > 1000) level = 2;
+  if (watts > 2000) level = 3;
+  if (watts > 3000) level = 4;
+  if (watts > 4000) level = 5;
+  if (watts > 6000) level = 6;
+
+  const levelScale = [0, 0.18, 0.34, 0.5, 0.66, 0.82, 1];
+  return Math.round(maxBurst * levelScale[level]);
+}
+
 function looksCloudy(conditionText) {
   const text = String(conditionText ?? "").toLowerCase();
   const markers = ["cloud", "overcast", "nuvol", "coperto", "mist", "fog", "haze"];
@@ -254,7 +269,7 @@ function FlowParticleSystem({ name, colorStart, colorEnd, segments, intensity = 
   );
 }
 
-function FlowParticlesOverlay({ flows }) {
+function FlowParticlesOverlay({ flows, bursts }) {
   return (
     <div className="flow-particles-layer" aria-hidden="true">
       <Canvas
@@ -270,7 +285,7 @@ function FlowParticlesOverlay({ flows }) {
           segments={flows.solar}
           intensity={6.6}
           particleSize={[1.8, 4.2]}
-          burstCount={52}
+          burstCount={bursts.solar}
         />
         <FlowParticleSystem
           name="battery-flow"
@@ -279,7 +294,7 @@ function FlowParticlesOverlay({ flows }) {
           segments={flows.battery}
           intensity={5.9}
           particleSize={[1.8, 4]}
-          burstCount={48}
+          burstCount={bursts.battery}
         />
         <FlowParticleSystem
           name="import-flow"
@@ -288,7 +303,7 @@ function FlowParticlesOverlay({ flows }) {
           segments={flows.import}
           intensity={6.2}
           particleSize={[2, 4.4]}
-          burstCount={54}
+          burstCount={bursts.import}
         />
         <FlowParticleSystem
           name="export-flow"
@@ -297,7 +312,7 @@ function FlowParticlesOverlay({ flows }) {
           segments={flows.export}
           intensity={6.2}
           particleSize={[2, 4.4]}
-          burstCount={54}
+          burstCount={bursts.export}
         />
       </Canvas>
     </div>
@@ -355,6 +370,12 @@ function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
   const batteryToHomePath = `M ${batteryRightX + trackGap} ${batteryRightY} L 580 ${batteryRightY} Q ${homeBottomX} ${batteryRightY} ${homeBottomX} 356 L ${homeBottomX} ${homeBottomY + trackGap}`;
   const gridImportPath = `M ${gridLeftX - trackGap} 200 L ${homeRightX + trackGap} 200`;
   const gridExportPath = `M ${homeRightX + trackGap} 200 L ${gridLeftX - trackGap} 200`;
+  const particleBursts = {
+    solar: particleBurstFromWatts(pvPower, 80),
+    battery: particleBurstFromWatts(batteryPower, 68),
+    import: particleBurstFromWatts(importing, 76),
+    export: particleBurstFromWatts(exporting, 76)
+  };
 
   const particleFlows = useMemo(
     () => ({
@@ -427,7 +448,7 @@ function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
         <div className="flow-atmosphere flow-atmosphere-home" aria-hidden="true" />
         <div className="flow-atmosphere flow-atmosphere-grid" aria-hidden="true" />
         <div className="flow-vignette" aria-hidden="true" />
-        <FlowParticlesOverlay flows={particleFlows} />
+        <FlowParticlesOverlay flows={particleFlows} bursts={particleBursts} />
         <svg className="flow-svg" viewBox="0 0 1200 470" preserveAspectRatio="none" aria-hidden="true">
           <FlowLine
             className="solar-to-home"

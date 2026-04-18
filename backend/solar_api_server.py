@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from mqtt_bridge import HomeAssistantMqttBridge, MqttConfig
 from solar_portal import SolarPortalClient, normalize_snapshot
 
 DEFAULT_HOST = os.getenv("SOLAR_API_HOST", "127.0.0.1")
@@ -26,7 +27,7 @@ DEFAULT_PORT = int(os.getenv("SOLAR_API_PORT", "8765"))
 DEFAULT_POLL_INTERVAL_SECONDS = float(os.getenv("SOLAR_POLL_INTERVAL_SECONDS", "1"))
 MAX_HISTORY_POINTS = int(os.getenv("SOLAR_HISTORY_POINTS", "60"))
 MAX_BACKOFF_SECONDS = float(os.getenv("SOLAR_MAX_BACKOFF_SECONDS", "30"))
-DIST_DIR = Path(os.getenv("SOLAR_WEB_DIST", Path(__file__).with_name("dist")))
+DIST_DIR = Path(os.getenv("SOLAR_WEB_DIST", Path(__file__).resolve().parents[1] / "ui" / "dist"))
 HISTORY_FILE = Path(os.getenv("SOLAR_HISTORY_FILE", Path(__file__).with_name("solar_history.jsonl")))
 
 TIMEFRAME_SPECS = {
@@ -269,15 +270,23 @@ class SolarRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def poll_forever(store: SnapshotStore, client: SolarPortalClient) -> None:
+def poll_forever(
+    store: SnapshotStore,
+    client: SolarPortalClient,
+    mqtt_bridge: HomeAssistantMqttBridge | None = None,
+) -> None:
     """Background loop that refreshes the cached snapshot."""
     while store.running:
         try:
             data = client.fetch_plant_data()
             snapshot = normalize_snapshot(data, client.get_status())
             store.set_snapshot(snapshot)
+            if mqtt_bridge:
+                mqtt_bridge.publish_snapshot(snapshot)
         except Exception as exc:
             store.set_error(str(exc))
+            if mqtt_bridge:
+                mqtt_bridge.publish_error(store.read()["snapshot"], str(exc))
 
         delay = store.read()["next_retry_delay_seconds"]
         time.sleep(delay)
@@ -301,8 +310,10 @@ def main() -> None:
 
     client = SolarPortalClient.from_env()
     store = SnapshotStore(poll_interval_seconds=args.poll_interval)
+    mqtt_bridge = HomeAssistantMqttBridge(MqttConfig.from_env(client.credentials.plant_id))
+    mqtt_bridge.start()
 
-    thread = threading.Thread(target=poll_forever, args=(store, client), daemon=True)
+    thread = threading.Thread(target=poll_forever, args=(store, client, mqtt_bridge), daemon=True)
     thread.start()
 
     server = build_server(args.host, args.port, store, client)
@@ -314,6 +325,7 @@ def main() -> None:
         pass
     finally:
         store.running = False
+        mqtt_bridge.stop()
         server.server_close()
 
 

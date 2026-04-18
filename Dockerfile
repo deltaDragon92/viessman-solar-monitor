@@ -2,8 +2,8 @@ FROM node:24-alpine AS web-builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json index.html ./
-COPY src ./src
+COPY ui/package.json ui/package-lock.json ui/index.html ./
+COPY ui/src ./src
 
 RUN npm ci
 RUN npm run build
@@ -18,12 +18,12 @@ ENV PYTHONUNBUFFERED=1
 ENV SOLAR_API_HOST=0.0.0.0
 ENV SOLAR_API_PORT=8765
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
 
-COPY solar_api_server.py solar_portal.py viessmann_solar.py ./
-COPY --from=web-builder /app/dist ./dist
+COPY backend ./backend
+COPY --from=web-builder /app/dist ./ui/dist
 
 EXPOSE 8765
 
-CMD ["python3", "solar_api_server.py", "--host", "0.0.0.0", "--port", "8765"]
+CMD ["python3", "backend/solar_api_server.py", "--host", "0.0.0.0", "--port", "8765"]

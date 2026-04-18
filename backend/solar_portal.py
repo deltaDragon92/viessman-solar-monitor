@@ -9,12 +9,14 @@ import os
 import threading
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(PROJECT_ROOT / ".env")
 
 BASE_URL = "https://www.semsportal.com"
 LOGIN_HEADERS = {
@@ -66,7 +68,7 @@ class SolarPortalClient:
 
     @classmethod
     def from_env(cls) -> "SolarPortalClient":
-        load_dotenv()
+        load_dotenv(PROJECT_ROOT / ".env")
         email = os.getenv("EMAIL")
         password = os.getenv("PASSWORD")
         plant_id = os.getenv("PLANT_ID")

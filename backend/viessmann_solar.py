@@ -6,8 +6,8 @@ Reads real-time data from the Viessmann Solar Portal and prints
 an easy-to-read summary in the terminal.
 
 Usage:
-    pip install -r requirements.txt
-    python3 viessmann_solar.py
+    pip install -r backend/requirements.txt
+    python3 backend/viessmann_solar.py
 """
 
 from __future__ import annotations
