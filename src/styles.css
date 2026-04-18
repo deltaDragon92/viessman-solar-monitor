@@ -2,12 +2,13 @@
   font-family: "Avenir Next", "Segoe UI", sans-serif;
   color: #eef5fb;
   background:
-    radial-gradient(circle at top, rgba(255, 146, 61, 0.16), transparent 24%),
-    radial-gradient(circle at left, rgba(41, 121, 255, 0.12), transparent 24%),
-    linear-gradient(180deg, #101722 0%, #0b1119 100%);
-  --panel: rgba(18, 28, 40, 0.84);
-  --panel-soft: rgba(26, 38, 54, 0.74);
-  --panel-border: rgba(120, 160, 205, 0.18);
+    radial-gradient(circle at 18% 18%, rgba(255, 171, 74, 0.16), transparent 26%),
+    radial-gradient(circle at 50% 48%, rgba(76, 189, 255, 0.11), transparent 28%),
+    radial-gradient(circle at 86% 26%, rgba(126, 136, 255, 0.14), transparent 24%),
+    linear-gradient(180deg, #0c121b 0%, #091019 100%);
+  --panel: rgba(13, 21, 31, 0.72);
+  --panel-soft: rgba(21, 33, 48, 0.56);
+  --panel-border: rgba(132, 174, 224, 0.16);
   --text-soft: #9db0c7;
   --accent: #41b6ff;
   --accent-warm: #ffb347;
@@ -17,7 +18,7 @@
   --accent-battery: #65d98b;
   --accent-home: #5ec8ff;
   --danger: #ff7a7a;
-  --shadow: 0 30px 80px rgba(0, 0, 0, 0.34);
+  --shadow: 0 26px 72px rgba(0, 0, 0, 0.34);
 }
 
 * {
@@ -35,11 +36,23 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 36px 36px;
   pointer-events: none;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 90%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(94, 200, 255, 0.08), transparent 24%),
+    radial-gradient(circle at 22% 74%, rgba(255, 179, 71, 0.05), transparent 18%),
+    radial-gradient(circle at 84% 64%, rgba(122, 156, 255, 0.07), transparent 20%);
+  mix-blend-mode: screen;
 }
 
 #app {
@@ -59,6 +72,7 @@ body::before {
   background: var(--panel);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
 }
 
 .hero-ha {
@@ -66,8 +80,11 @@ body::before {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  border-radius: 26px;
-  padding: 18px 20px;
+  border-radius: 30px;
+  padding: 20px 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+    var(--panel);
 }
 
 .eyebrow {
@@ -109,6 +126,8 @@ h1 {
   padding: 8px 12px;
   font-size: 0.84rem;
   background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .pill-ok {
@@ -145,8 +164,22 @@ h1 {
 }
 
 .kpi-pill {
-  border-radius: 18px;
-  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 15px 17px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01)),
+    var(--panel);
+}
+
+.kpi-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  opacity: 0.75;
 }
 
 .kpi-pill span {
@@ -164,9 +197,24 @@ h1 {
 }
 
 .flow-panel {
-  border-radius: 28px;
-  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  padding: 22px;
   margin-bottom: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    var(--panel);
+}
+
+.flow-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%),
+    radial-gradient(circle at 50% 48%, rgba(94, 200, 255, 0.05), transparent 28%);
+  pointer-events: none;
 }
 
 .panel-header {
@@ -191,7 +239,12 @@ h2 {
 
 .flow-legend {
   color: var(--text-soft);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .legend-dot {
@@ -211,14 +264,31 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .summary-chip,
 .footer-chip {
-  border-radius: 16px;
-  padding: 12px 14px;
-  background: var(--panel-soft);
-  border: 1px solid rgba(125, 164, 210, 0.1);
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 13px 15px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012)),
+    var(--panel-soft);
+  border: 1px solid rgba(125, 164, 210, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.summary-chip::before,
+.footer-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, rgba(255, 209, 102, 0.85), rgba(94, 200, 255, 0.85));
+  opacity: 0.82;
 }
 
 .summary-chip span,
@@ -244,14 +314,63 @@ dt {
   position: relative;
   height: 470px;
   margin: 14px 0;
-  border-radius: 26px;
+  border-radius: 30px;
   background:
-    radial-gradient(circle at 22% 18%, rgba(255, 193, 7, 0.12), transparent 16%),
-    radial-gradient(circle at 50% 44%, rgba(94, 200, 255, 0.12), transparent 20%),
-    radial-gradient(circle at 85% 42%, rgba(156, 125, 255, 0.12), transparent 18%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
-  border: 1px solid rgba(125, 164, 210, 0.12);
+    radial-gradient(circle at 22% 18%, rgba(255, 193, 7, 0.09), transparent 18%),
+    radial-gradient(circle at 50% 44%, rgba(94, 200, 255, 0.1), transparent 22%),
+    radial-gradient(circle at 85% 42%, rgba(156, 125, 255, 0.1), transparent 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent);
+  border: 1px solid rgba(125, 164, 210, 0.1);
   overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -40px 80px rgba(3, 8, 14, 0.25);
+}
+
+.flow-atmosphere,
+.flow-vignette {
+  position: absolute;
+  pointer-events: none;
+}
+
+.flow-atmosphere {
+  border-radius: 999px;
+  filter: blur(12px);
+  opacity: 0.75;
+  z-index: 0;
+}
+
+.flow-atmosphere-solar {
+  top: 110px;
+  left: 72px;
+  width: 270px;
+  height: 170px;
+  background: radial-gradient(circle, rgba(255, 179, 71, 0.16), rgba(255, 179, 71, 0.02) 66%, transparent 74%);
+}
+
+.flow-atmosphere-home {
+  top: 120px;
+  left: 50%;
+  width: 340px;
+  height: 220px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(94, 200, 255, 0.16), rgba(94, 200, 255, 0.02) 62%, transparent 74%);
+}
+
+.flow-atmosphere-grid {
+  top: 116px;
+  right: 56px;
+  width: 280px;
+  height: 190px;
+  background: radial-gradient(circle, rgba(122, 156, 255, 0.16), rgba(122, 156, 255, 0.02) 64%, transparent 74%);
+}
+
+.flow-vignette {
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at center, transparent 44%, rgba(5, 12, 18, 0.12) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.16));
 }
 
 .flow-svg {
@@ -260,6 +379,20 @@ dt {
   width: 100%;
   height: 100%;
   overflow: visible;
+  z-index: 1;
+}
+
+.flow-particles-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.flow-particles-layer canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .energy-node {
@@ -267,13 +400,27 @@ dt {
   min-width: 164px;
   min-height: 96px;
   padding: 14px 16px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(17, 27, 40, 0.96), rgba(12, 20, 31, 0.92));
-  border: 1px solid rgba(132, 173, 222, 0.18);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(18, 28, 40, 0.9), rgba(9, 16, 24, 0.82));
+  border: 1px solid rgba(132, 173, 222, 0.14);
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 18px 40px rgba(2, 6, 11, 0.22);
+  z-index: 4;
+  backdrop-filter: blur(16px);
+}
+
+.energy-node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%);
+  pointer-events: none;
 }
 
 .energy-icon-wrap {
@@ -293,8 +440,9 @@ dt {
   border-radius: 18px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 
 .glyph {
@@ -326,6 +474,7 @@ dt {
 .accent-solar .energy-icon {
   background: rgba(255, 179, 71, 0.14);
   color: var(--accent-warm);
+  box-shadow: 0 0 22px rgba(255, 179, 71, 0.12);
 }
 
 .sun-source {
@@ -337,6 +486,7 @@ dt {
   display: grid;
   place-items: center;
   pointer-events: none;
+  z-index: 4;
 }
 
 .sun-radiance {
@@ -435,26 +585,31 @@ dt {
 .accent-home .energy-icon {
   background: rgba(94, 200, 255, 0.14);
   color: var(--accent-home);
+  box-shadow: 0 0 24px rgba(94, 200, 255, 0.12);
 }
 
 .accent-grid .energy-icon {
   background: rgba(156, 125, 255, 0.14);
   color: var(--accent-grid);
+  box-shadow: 0 0 22px rgba(156, 125, 255, 0.12);
 }
 
 .accent-import .energy-icon {
   background: rgba(255, 143, 112, 0.14);
   color: var(--accent-import);
+  box-shadow: 0 0 22px rgba(255, 143, 112, 0.12);
 }
 
 .accent-export .energy-icon {
   background: rgba(122, 156, 255, 0.14);
   color: var(--accent-export);
+  box-shadow: 0 0 22px rgba(122, 156, 255, 0.12);
 }
 
 .accent-battery .energy-icon {
   background: rgba(101, 217, 139, 0.14);
   color: var(--accent-battery);
+  box-shadow: 0 0 22px rgba(101, 217, 139, 0.12);
 }
 
 .node-solar {
@@ -491,7 +646,7 @@ dt {
   position: absolute;
   inset: -8px;
   border-radius: 999px;
-  border: 1px solid rgba(94, 200, 255, 0.2);
+  border: 1px solid rgba(94, 200, 255, 0.16);
   z-index: 1;
 }
 
@@ -505,26 +660,26 @@ dt {
 
 .flow-track {
   fill: none;
-  stroke: rgba(130, 156, 186, 0.22);
+  stroke: transparent;
   stroke-width: 7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .tone-solar .flow-track {
-  stroke: rgba(255, 196, 100, 0.18);
+  stroke: transparent;
 }
 
 .tone-battery .flow-track {
-  stroke: rgba(101, 217, 139, 0.18);
+  stroke: transparent;
 }
 
 .tone-import .flow-track {
-  stroke: rgba(255, 143, 112, 0.2);
+  stroke: transparent;
 }
 
 .tone-export .flow-track {
-  stroke: rgba(122, 156, 255, 0.2);
+  stroke: transparent;
 }
 
 .flow-orb {

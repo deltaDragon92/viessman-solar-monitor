@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { AdditiveBlending } from "three";
+import { AppearanceMode, VFXEmitter, VFXParticles } from "wawa-vfx";
 
 const POLL_MS = 1000;
 const TOKEN_BADGE_MS = 6000;
+const DEV_FRONTEND_PORT = "1420";
+const DEFAULT_API_PORT = "8765";
 
 const EMPTY_STATE = {
   connectionKind: "waiting",
@@ -11,6 +16,17 @@ const EMPTY_STATE = {
   data: null,
   errorMessage: "None"
 };
+
+function getApiBaseUrl() {
+  if (typeof window === "undefined") return "";
+
+  const { protocol, hostname, port } = window.location;
+  if (port === DEV_FRONTEND_PORT) {
+    return `${protocol}//${hostname}:${DEFAULT_API_PORT}`;
+  }
+
+  return "";
+}
 
 function formatWatts(value) {
   return `${Number(value ?? 0).toFixed(0)} W`;
@@ -158,64 +174,133 @@ function EnergyGlyph({ kind }) {
 }
 
 function FlowLine({ className, active, reverse = false, tone = "solar", path }) {
-  const photonStyle = {
-    solar: {
-      tail: "!fill-[#ffd166]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(255,209,102,0.72))_drop-shadow(0_0_34px_rgba(255,158,94,0.42))] animate-photon-tail",
-      aura: "!fill-[#fff6db]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(255,232,170,0.92))_drop-shadow(0_0_42px_rgba(255,158,94,0.62))] animate-photon-aura",
-      core: "!fill-[#fff9ea] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(255,247,222,0.98))_drop-shadow(0_0_20px_rgba(255,209,102,0.96))_drop-shadow(0_0_38px_rgba(255,158,94,0.82))] animate-photon-core"
-    },
-    battery: {
-      tail: "!fill-[#65d98b]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(101,217,139,0.72))_drop-shadow(0_0_34px_rgba(54,184,106,0.42))] animate-photon-tail",
-      aura: "!fill-[#effff4]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(220,255,231,0.92))_drop-shadow(0_0_42px_rgba(54,184,106,0.62))] animate-photon-aura",
-      core: "!fill-[#f7fff9] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(243,255,247,0.98))_drop-shadow(0_0_20px_rgba(101,217,139,0.96))_drop-shadow(0_0_38px_rgba(54,184,106,0.82))] animate-photon-core"
-    },
-    import: {
-      tail: "!fill-[#ff8f70]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(255,143,112,0.72))_drop-shadow(0_0_34px_rgba(255,110,74,0.42))] animate-photon-tail",
-      aura: "!fill-[#fff0eb]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(255,229,222,0.92))_drop-shadow(0_0_42px_rgba(255,110,74,0.62))] animate-photon-aura",
-      core: "!fill-[#fff8f5] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(255,245,241,0.98))_drop-shadow(0_0_20px_rgba(255,143,112,0.96))_drop-shadow(0_0_38px_rgba(255,110,74,0.82))] animate-photon-core"
-    },
-    export: {
-      tail: "!fill-[#7a9cff]/8 !opacity-100 mix-blend-screen blur-[5px] [filter:drop-shadow(0_0_14px_rgba(122,156,255,0.72))_drop-shadow(0_0_34px_rgba(82,199,255,0.42))] animate-photon-tail",
-      aura: "!fill-[#f3f7ff]/18 !opacity-100 mix-blend-screen blur-[8px] [filter:drop-shadow(0_0_18px_rgba(237,243,255,0.92))_drop-shadow(0_0_42px_rgba(82,199,255,0.62))] animate-photon-aura",
-      core: "!fill-[#fbfdff] !opacity-100 mix-blend-screen blur-[0.8px] [filter:drop-shadow(0_0_8px_rgba(248,251,255,0.98))_drop-shadow(0_0_20px_rgba(122,156,255,0.96))_drop-shadow(0_0_38px_rgba(82,199,255,0.82))] animate-photon-core"
-    }
-  }[tone];
-
   return (
     <g className={`flow-group ${className} tone-${tone} ${active ? "is-active" : ""} ${reverse ? "is-reverse" : ""}`}>
       <path className="flow-track" d={path} pathLength="100" />
-      {active ? (
-        <>
-          <ellipse className={`flow-orb flow-orb-tail ${photonStyle.tail}`} rx="13" ry="2.6">
-            <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
-          </ellipse>
-          <circle className={`flow-orb flow-orb-aura ${photonStyle.aura}`} r="10.5">
-            <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
-          </circle>
-          <circle className={`flow-orb flow-orb-core ${photonStyle.core}`} r="4.2">
-            <animateMotion dur="4.8s" repeatCount="indefinite" path={path} rotate="auto" />
-          </circle>
-          <ellipse className={`flow-orb flow-orb-tail delay-1 ${photonStyle.tail}`} rx="13" ry="2.6">
-            <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
-          </ellipse>
-          <circle className={`flow-orb flow-orb-aura delay-1 ${photonStyle.aura}`} r="10.5">
-            <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
-          </circle>
-          <circle className={`flow-orb flow-orb-core delay-1 ${photonStyle.core}`} r="4.2">
-            <animateMotion dur="4.8s" begin="1.6s" repeatCount="indefinite" path={path} rotate="auto" />
-          </circle>
-          <ellipse className={`flow-orb flow-orb-tail delay-2 ${photonStyle.tail}`} rx="13" ry="2.6">
-            <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
-          </ellipse>
-          <circle className={`flow-orb flow-orb-aura delay-2 ${photonStyle.aura}`} r="10.5">
-            <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
-          </circle>
-          <circle className={`flow-orb flow-orb-core delay-2 ${photonStyle.core}`} r="4.2">
-            <animateMotion dur="4.8s" begin="3.2s" repeatCount="indefinite" path={path} rotate="auto" />
-          </circle>
-        </>
-      ) : null}
     </g>
+  );
+}
+
+function toScenePoint([x, y]) {
+  return [x - 600, 235 - y, 0];
+}
+
+function buildSegment(start, end) {
+  const [sx, sy] = start;
+  const [ex, ey] = end;
+  const dx = ex - sx;
+  const dy = ey - sy;
+  const length = Math.hypot(dx, dy);
+  const speed = Math.max(18, Math.min(24, length / 8.5));
+  const lifetime = Math.max(1.2, Math.min(8, length / speed));
+
+  return {
+    position: toScenePoint(start),
+    direction: [dx / length, -dy / length, 0],
+    lifetime,
+    speedRange: [speed * 0.92, speed * 1.08]
+  };
+}
+
+function FlowParticleSystem({ name, colorStart, colorEnd, segments, intensity = 6.5, particleSize = [6, 11], burstCount = 28 }) {
+  if (!segments.length) return null;
+
+  return (
+    <>
+      <VFXParticles
+        name={name}
+        settings={{
+          nbParticles: 3200,
+          intensity,
+          renderMode: "billboard",
+          appearance: AppearanceMode.Circular,
+          fadeSize: [0.18, 0.94],
+          fadeAlpha: [0.12, 0.9],
+          gravity: [0, 0, 0],
+          blendingMode: AdditiveBlending,
+          easeFunction: "easeInOutSine"
+        }}
+      />
+      {segments.map((segment, index) => (
+        <VFXEmitter
+          key={`${name}-${index}`}
+          emitter={name}
+          autoStart
+          settings={{
+            loop: true,
+            duration: 1.05,
+            delay: index * 0.18,
+            nbParticles: burstCount,
+            spawnMode: "time",
+            particlesLifetime: [segment.lifetime * 0.94, segment.lifetime * 1.08],
+            startPositionMin: [-2.5, -2.5, -0.02],
+            startPositionMax: [2.5, 2.5, 0.02],
+            startRotationMin: [0, 0, 0],
+            startRotationMax: [0, 0, 0],
+            rotationSpeedMin: [0, 0, 0],
+            rotationSpeedMax: [0, 0, 0],
+            directionMin: segment.direction,
+            directionMax: segment.direction,
+            size: particleSize,
+            speed: segment.speedRange,
+            colorStart,
+            colorEnd,
+            useLocalDirection: false
+          }}
+          position={segment.position}
+        />
+      ))}
+    </>
+  );
+}
+
+function FlowParticlesOverlay({ flows }) {
+  return (
+    <div className="flow-particles-layer" aria-hidden="true">
+      <Canvas
+        orthographic
+        dpr={[1, 1.75]}
+        gl={{ alpha: true, antialias: true }}
+        camera={{ position: [0, 0, 100], zoom: 1, left: -600, right: 600, top: 235, bottom: -235, near: 0.1, far: 500 }}
+      >
+        <FlowParticleSystem
+          name="solar-flow"
+          colorStart={["#fff8d8", "#ffcf66", "#ffb347"]}
+          colorEnd={["#ffd166", "#ffb347", "#ff9f5e"]}
+          segments={flows.solar}
+          intensity={6.6}
+          particleSize={[1.8, 4.2]}
+          burstCount={52}
+        />
+        <FlowParticleSystem
+          name="battery-flow"
+          colorStart={["#f2fff5", "#8bf3ac", "#65d98b"]}
+          colorEnd={["#8bf3ac", "#65d98b", "#2fcb6a"]}
+          segments={flows.battery}
+          intensity={5.9}
+          particleSize={[1.8, 4]}
+          burstCount={48}
+        />
+        <FlowParticleSystem
+          name="import-flow"
+          colorStart={["#fff5f0", "#ffb09a", "#ff8f70"]}
+          colorEnd={["#ffb09a", "#ff8f70", "#ff6e4a"]}
+          segments={flows.import}
+          intensity={6.2}
+          particleSize={[2, 4.4]}
+          burstCount={54}
+        />
+        <FlowParticleSystem
+          name="export-flow"
+          colorStart={["#eff5ff", "#8db2ff", "#5ec8ff"]}
+          colorEnd={["#8db2ff", "#7a9cff", "#52c7ff"]}
+          segments={flows.export}
+          intensity={6.2}
+          particleSize={[2, 4.4]}
+          burstCount={54}
+        />
+      </Canvas>
+    </div>
   );
 }
 
@@ -265,6 +350,50 @@ function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
   const batteryTopY = 328;
   const batteryRightX = 408;
   const batteryRightY = 376;
+  const solarToHomePath = `M ${solarRightX + trackGap} 200 L ${homeLeftX - trackGap} 200`;
+  const solarToBatteryPath = `M ${solarBottomX} ${solarBottomY + trackGap} L ${solarBottomX} 288 Q ${solarBottomX} 308 204 308 L 279 308 Q 297 308 297 320`;
+  const batteryToHomePath = `M ${batteryRightX + trackGap} ${batteryRightY} L 580 ${batteryRightY} Q ${homeBottomX} ${batteryRightY} ${homeBottomX} 356 L ${homeBottomX} ${homeBottomY + trackGap}`;
+  const gridImportPath = `M ${gridLeftX - trackGap} 200 L ${homeRightX + trackGap} 200`;
+  const gridExportPath = `M ${homeRightX + trackGap} 200 L ${gridLeftX - trackGap} 200`;
+
+  const particleFlows = useMemo(
+    () => ({
+      solar: pvPower > 0 && houseConsumption > 0 ? [buildSegment([solarRightX, 200], [homeLeftX, 200])] : [],
+      battery:
+        charging > 0
+          ? [
+              buildSegment([solarBottomX, solarBottomY], [solarBottomX, 288]),
+              buildSegment([204, 308], [279, 308])
+            ]
+          : discharging > 0
+            ? [
+                buildSegment([batteryRightX, batteryRightY], [580, batteryRightY]),
+                buildSegment([homeBottomX, 356], [homeBottomX, homeBottomY])
+              ]
+            : [],
+      import: importing > 0 ? [buildSegment([gridLeftX, 200], [homeRightX, 200])] : [],
+      export: exporting > 0 ? [buildSegment([homeRightX, 200], [gridLeftX, 200])] : []
+    }),
+    [
+      batteryRightX,
+      batteryRightY,
+      charging,
+      discharging,
+      exporting,
+      gridLeftX,
+      homeBottomX,
+      homeBottomY,
+      homeLeftX,
+      homeRightX,
+      houseConsumption,
+      importing,
+      pvPower,
+      solarBottomX,
+      solarBottomY,
+      solarRightX,
+      trackGap
+    ]
+  );
 
   return (
     <section className="panel flow-panel">
@@ -294,37 +423,42 @@ function EnergyFlowCard({ realtime, battery, grid, inverter, weather }) {
       </div>
 
       <div className="energy-flow">
+        <div className="flow-atmosphere flow-atmosphere-solar" aria-hidden="true" />
+        <div className="flow-atmosphere flow-atmosphere-home" aria-hidden="true" />
+        <div className="flow-atmosphere flow-atmosphere-grid" aria-hidden="true" />
+        <div className="flow-vignette" aria-hidden="true" />
+        <FlowParticlesOverlay flows={particleFlows} />
         <svg className="flow-svg" viewBox="0 0 1200 470" preserveAspectRatio="none" aria-hidden="true">
           <FlowLine
             className="solar-to-home"
             active={pvPower > 0 && houseConsumption > 0}
             tone="solar"
-            path={`M ${solarRightX + trackGap} 200 L ${homeLeftX - trackGap} 200`}
+            path={solarToHomePath}
           />
           <FlowLine
             className="solar-to-battery"
             active={charging > 0}
             tone="battery"
-            path={`M ${solarBottomX} ${solarBottomY + trackGap} L ${solarBottomX} 288 Q ${solarBottomX} 308 204 308 L 279 308 Q 297 308 297 320`}
+            path={solarToBatteryPath}
           />
           <FlowLine
             className="battery-to-home"
             active={discharging > 0}
             tone="battery"
-            path={`M ${batteryRightX + trackGap} ${batteryRightY} L 580 ${batteryRightY} Q ${homeBottomX} ${batteryRightY} ${homeBottomX} 356 L ${homeBottomX} ${homeBottomY + trackGap}`}
+            path={batteryToHomePath}
           />
           <FlowLine
             className="grid-import"
             active={importing > 0}
             tone="import"
             reverse
-            path={`M ${gridLeftX - trackGap} 200 L ${homeRightX + trackGap} 200`}
+            path={gridImportPath}
           />
           <FlowLine
             className="grid-export"
             active={exporting > 0}
             tone="export"
-            path={`M ${homeRightX + trackGap} 200 L ${gridLeftX - trackGap} 200`}
+            path={gridExportPath}
           />
         </svg>
 
@@ -386,13 +520,14 @@ export default function App() {
   const [viewState, setViewState] = useState(EMPTY_STATE);
   const lastTokenRefreshCount = useRef(null);
   const tokenBadgeTimeout = useRef(null);
+  const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
 
   useEffect(() => {
     let disposed = false;
 
     async function fetchSnapshot() {
       try {
-        const response = await fetch("/api/snapshot", { cache: "no-store" });
+        const response = await fetch(`${apiBaseUrl}/api/snapshot`, { cache: "no-store" });
         const payload = await response.json();
 
         if (!response.ok || !payload.ok || !payload.snapshot) {
@@ -428,7 +563,7 @@ export default function App() {
         const fallbackMessage = error instanceof Error ? error.message : String(error);
 
         try {
-          const statusResponse = await fetch("/api/status", { cache: "no-store" });
+          const statusResponse = await fetch(`${apiBaseUrl}/api/status`, { cache: "no-store" });
           const statusPayload = await statusResponse.json();
 
           if (disposed) return;
@@ -464,7 +599,7 @@ export default function App() {
       window.clearInterval(intervalId);
       clearTimeout(tokenBadgeTimeout.current);
     };
-  }, []);
+  }, [apiBaseUrl]);
 
   const snapshot = viewState.data?.snapshot ?? {};
   const backend = viewState.data?.backend ?? {};
