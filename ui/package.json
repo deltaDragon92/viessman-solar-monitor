@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "frontend": "parcel serve index.html --host 0.0.0.0 --port 1420",
-    "build": "parcel build index.html --dist-dir dist --public-url ./",
-    "tauri": "tauri"
+    "build": "parcel build index.html --dist-dir dist --public-url ./"
   },
   "dependencies": {
     "@react-three/fiber": "^9.6.0",
@@ -17,7 +16,6 @@
     "wawa-vfx": "^1.2.10"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
     "parcel": "^2.16.4"
   }
 }
